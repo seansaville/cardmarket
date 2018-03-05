@@ -14,6 +14,29 @@ case class Credentials(
   appSecret: String
 )
 
+case class OAuthHeader(
+  realm: String,
+  version: String,
+  timestamp: String,
+  nonce: String,
+  consumerKey: String,
+  token: String,
+  signatureMethod: String,
+  signature: String
+) {
+  def asString: String = {
+    "OAuth " +
+      "realm=\"" + realm + "\", " +
+      "oauth_version=\"" + version + "\", " +
+      "oauth_timestamp=\"" + timestamp + "\", " +
+      "oauth_nonce=\"" + nonce + "\", " +
+      "oauth_consumer_key=\"" + consumerKey + "\", " +
+      "oauth_token=\"" + token + "\", " +
+      "oauth_signature_method=\"" + signatureMethod + "\", " +
+      "oauth_signature=\"" + signature + "\""
+  }
+}
+
 object Authentication {
   private def buildBaseString(request: String, realm: String): String = {
     request + "&" + URLEncoder.encode(realm, "UTF-8") + "&"
@@ -72,7 +95,7 @@ object Authentication {
     (realm, parameterMap)
   }
 
-  def buildOAuthHeader(creds: Credentials, url: String, request: String): String = {
+  def buildOAuthHeader(credentials: Credentials, url: String, request: String): OAuthHeader = {
     val nonce = generateNonce(32)
     val signatureMethod = "HMAC-SHA1"
     val timestamp = (System.currentTimeMillis() / 1000).toString
@@ -85,28 +108,27 @@ object Authentication {
     val baseString = buildBaseString(request, realm)
 
     // Build a map with all of the OAuth-specific parameters
-    val oAuthParameters = Map("oauth_consumer_key" -> creds.appToken,
-      "oauth_nonce" -> nonce,
-      "oauth_signature_method" -> signatureMethod,
-      "oauth_timestamp" -> timestamp,
-      "oauth_token" -> creds.accessToken,
-      "oauth_version" -> version)
+    val oAuthParameters = Map("oauth_consumer_key" -> credentials.appToken,
+                              "oauth_nonce" -> nonce,
+                              "oauth_signature_method" -> signatureMethod,
+                              "oauth_timestamp" -> timestamp,
+                              "oauth_token" -> credentials.accessToken,
+                              "oauth_version" -> version)
 
     // Concatenate the OAuth parameters and the URL parameters into a single string
     val parameterString = buildParameterString(oAuthParameters, urlParameters)
 
     // Build the signing key and then generate the signature
-    val signingKey = buildSigningKey(creds)
+    val signingKey = buildSigningKey(credentials)
     val signature = buildSignature(baseString + parameterString, signingKey)
 
-    "OAuth " +
-      "realm=\"" + realm + "\", " +
-      "oauth_version=\"" + version + "\", " +
-      "oauth_timestamp=\"" + timestamp + "\", " +
-      "oauth_nonce=\"" + nonce + "\", " +
-      "oauth_consumer_key=\"" + creds.appToken + "\", " +
-      "oauth_token=\"" + creds.accessToken + "\", " +
-      "oauth_signature_method=\"" + signatureMethod + "\", " +
-      "oauth_signature=\"" + signature + "\""
+    OAuthHeader(realm,
+                version,
+                timestamp,
+                nonce,
+                credentials.appToken,
+                credentials.accessToken,
+                signatureMethod,
+                signature)
   }
 }
