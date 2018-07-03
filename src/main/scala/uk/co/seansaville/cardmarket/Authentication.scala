@@ -26,15 +26,19 @@ case class OAuthHeader(
 ) {
   def asString: String = {
     "OAuth " +
-      "realm=\"" + realm + "\", " +
-      "oauth_version=\"" + version + "\", " +
-      "oauth_timestamp=\"" + timestamp + "\", " +
-      "oauth_nonce=\"" + nonce + "\", " +
-      "oauth_consumer_key=\"" + consumerKey + "\", " +
-      "oauth_token=\"" + token + "\", " +
-      "oauth_signature_method=\"" + signatureMethod + "\", " +
-      "oauth_signature=\"" + signature + "\""
+      OAuthHeader.headerPair("realm", realm) +
+      OAuthHeader.headerPair("oauth_version", version) +
+      OAuthHeader.headerPair("oauth_timestamp", timestamp) +
+      OAuthHeader.headerPair("oauth_nonce", nonce) +
+      OAuthHeader.headerPair("oauth_consumer_key", consumerKey) +
+      OAuthHeader.headerPair("oauth_token", token) +
+      OAuthHeader.headerPair("oauth_signature_method", signatureMethod) +
+      OAuthHeader.headerPair("oauth_signature", signature)
   }
+}
+
+object OAuthHeader {
+  def headerPair(key: String, value: String): String = key + "=" + "\"" + value + "\""
 }
 
 object Authentication {
@@ -62,6 +66,8 @@ object Authentication {
     val randoms = for (_ <- 1 to length) yield Random.nextInt(16).toHexString
     randoms.mkString
   }
+
+  private def generateTimestamp(): String = (System.currentTimeMillis() / 1000).toString
 
   private def sha1Hash(bytes: Array[Byte], secret: Array[Byte]): Array[Byte] = {
     val sha1 = Mac.getInstance("HmacSHA1")
@@ -95,10 +101,12 @@ object Authentication {
     (realm, parameterMap)
   }
 
-  def buildOAuthHeader(credentials: Credentials, url: String, request: String): OAuthHeader = {
-    val nonce = generateNonce(32)
+  def buildOAuthHeader(credentials: Credentials, url: String, request: String,
+      getNonce: Int => String = generateNonce,
+      getTimestamp: () => String = generateTimestamp): OAuthHeader = {
+    val nonce = getNonce(32)
     val signatureMethod = "HMAC-SHA1"
-    val timestamp = (System.currentTimeMillis() / 1000).toString
+    val timestamp = getTimestamp()
     val version = "1.0"
 
     // Split the URL into the base URL and its parameters
