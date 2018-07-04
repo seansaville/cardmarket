@@ -47,12 +47,13 @@ class AuthenticationSpec extends UnitSpec {
     assert(header.contains(OAuthHeader.headerPair("oauth_consumer_key", testCredentials.appToken)))
     assert(header.contains(OAuthHeader.headerPair("oauth_token", testCredentials.accessToken)))
     assert(header.contains(OAuthHeader.headerPair("oauth_signature_method", signatureMethod)))
-    assert(header.contains(OAuthHeader.headerPair("oauth_signature", signature)))
+    assert(header.contains(OAuthHeader.headerPair("oauth_signature", signature, last = true)))
   }
 
   "OAuthHeader.headerPair" should "return key-value pairs in the correct format" in {
     val key = "this_is_my_key"
     val value = "this is the value"
-    assert(OAuthHeader.headerPair(key, value) == "this_is_my_key=\"this is the value\"")
+    assert(OAuthHeader.headerPair(key, value) == "this_is_my_key=\"this is the value\", ")
+    assert(OAuthHeader.headerPair(key, value, last = true) == "this_is_my_key=\"this is the value\"")
   }
 }

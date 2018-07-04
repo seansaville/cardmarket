@@ -33,12 +33,14 @@ case class OAuthHeader(
       OAuthHeader.headerPair("oauth_consumer_key", consumerKey) +
       OAuthHeader.headerPair("oauth_token", token) +
       OAuthHeader.headerPair("oauth_signature_method", signatureMethod) +
-      OAuthHeader.headerPair("oauth_signature", signature)
+      OAuthHeader.headerPair("oauth_signature", signature, last = true)
   }
 }
 
 object OAuthHeader {
-  def headerPair(key: String, value: String): String = key + "=" + "\"" + value + "\""
+  def headerPair(key: String, value: String, last: Boolean = false): String = {
+    key + "=" + "\"" + value + "\"" + (if (!last) ", " else "")
+  }
 }
 
 object Authentication {
